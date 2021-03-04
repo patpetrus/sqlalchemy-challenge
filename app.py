@@ -14,7 +14,7 @@ from flask import Flask, jsonify
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///hawaii.sqlite")
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 conn = engine.connect()
 
 # reflect an existing database into a new model
@@ -77,39 +77,55 @@ def precip():
     return jsonify(precip)
 
 @app.route("/api/v1.0/stations")
-def stations():
+def stat():
     #session link
     session = Session(engine)
     #query all stations
-    stations = session.query(station.name).all
+    # result = session.query(station.station).all
+    # output = list(np.ravel(result))
 
+    station_nm = session.query(station.station,station.name).all()
+    return jsonify(station_nm)
     session.close()
 
-    return jsonify(stations)
+    # return jsonify(output)
 
 @app.route('/api/v1.0/tobs')
 def tobs():
     #session link
     session = Session(engine)
     #query dates and temp observations (tobs)
-    for 'USC00519281' in measurement.station:
-        print(measurement.date, measurement.tobs)
+    output = session.query(measurement.station, func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+filter(measurement.station == 'USC00519281').all()
 
     session.close()
     #return jsonify tobs
-    return jsonify(tobs)
+    return jsonify(output)
 
 @app.route('/api/v1.0/<start>')
-def stat_temp():
+def stat_temp(start):
     #Return a JSON list of the minimum temperature, 
     # the average temperature, 
     # and the max temperature for a given start or start-end range.
     session = Session(engine)
 
-    temps = measurement.temps.describe()
+    temps = session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+filter(measurement.date >= start).all()
+
     
     session.close()
     return jsonify(temps)
+
+@app.route('/api/v1.0/<start>/<end>')
+def stat_start_end(start, end):
+    session = Session(engine)
+
+    temps_start = session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).\
+filter(measurement.date >= start).filter(measurement.date <= end).all()
+
+    session.close()
+    return jsonify(temps_start)
+
 
     # When given the start only, calculate TMIN, TAVG, and TMAX 
     # for all dates greater than and equal to the start date.
